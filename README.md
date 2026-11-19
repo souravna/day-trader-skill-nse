@@ -3,8 +3,20 @@
 11 Claude skills for day trading: scan thousands of charts, track breaking news, time every entry and exit, and replay every outcome before you risk a dollar.
 
 Free, MIT, no signup, no API key. The tools are plain Python that read free
-public data: Yahoo Finance charts, Nasdaq Trader's symbol lists, SEC EDGAR
-and the House Clerk.
+public data: Yahoo Finance charts, NSE's equity list, SEC EDGAR and the
+House Clerk.
+
+**This copy is set up for the Indian market (NSE).** The clock is IST
+(UTC+05:30, no daylight saving), the session is 9:15 a.m. to 3:30 p.m., the
+calendar is NSE's 2026 trading-holiday list (no early closes), every day
+trade is flat by 3:15 p.m., new entries run 9:30 to 14:50, and NSE symbols go
+to Yahoo exactly as written (`RELIANCE.NS`, `BAJAJ-AUTO.NS`, `M&M.NS`). The
+scanner's universe is NSE's own list of EQ-series stocks. NSE publishes the
+2027 holidays in December 2026: add them to `NSE_HOLIDAYS` in each tool when
+they are out (until then 2027 dates say the holiday list is unknown). Still
+US-only: the SEC 8-K filings in trader-news, trader-analyst (SEC XBRL),
+trader-pelosi (US Congress), the Alpaca broker connector, and the `$` signs
+on amounts (the numbers are in the stock's own currency).
 
 One scans thousands of charts for setups. Another tracks breaking news on
 every stock you watch. One watches a setup bar by bar and tells you the moment
@@ -86,23 +98,23 @@ news / analyst / pelosi                                                        (
 
 An example, the trade in the reel: Tesla, Monday October 19 2026, real data.
 
-1. **`/trader-scanner`** at 10:15 AM ET: of the 231 charts in the reel's
+1. **`/trader-scanner`** at 10:00 AM IST: of the 231 charts in the reel's
    scan, 42 had closed above their 15-minute opening range. TSLA is one: range 354.47 to 362.18,
-   the 10:10 candle closed at 364.18, 0.55 % over the top.
-2. **`/trader-news`**: the morning's TSLA headlines, in New York time
-   ("Tesla-SpaceX Merger Mania Strikes Wall Street Ahead of Earnings", 8:04,
+   the 09:55 candle closed at 364.18, 0.55 % over the top.
+2. **`/trader-news`**: the morning's TSLA headlines, in IST
+   ("Tesla-SpaceX Merger Mania Strikes Wall Street Ahead of Earnings", 17:34,
    tagged earnings and deal). Tesla reports this week: a day trade is out
    before the close, so it is not exposed to the report.
-3. **`/trader-entry`** watched TSLA bar by bar. At 10:12 it said waiting (the
-   10:10 bar was still forming). At 10:15 it said triggered: the first
+3. **`/trader-entry`** watched TSLA bar by bar. At 09:57 it said waiting (the
+   9:55 bar was still forming). At 10:00 it said triggered: the first
    5-minute close above the range, 364.18.
 4. **`/trader-exit`** set the plan before the entry: stop at the range's
    midpoint, 358.32, so 5.86 a share at risk; target one times that risk,
-   370.04; flat by 3:55 PM either way.
+   370.04; flat by 3:15 PM either way.
 5. **`/trader-timemachine`** replayed the rest of the day 10,000 times, each
    5-minute candle drawn from TSLA's own candles at that time of day over the
    previous 59 sessions (seed 19, so anyone can repeat it): target first
-   29.4 %, stop first 25.5 %, still open at the close 45.1 %. It also re-ran
+   26.9 %, stop first 23.2 %, still open at the 3:15 PM flat-by 49.9 %. It also re-ran
    the same rule on those 59 real sessions: it fired 33 times, 13 hit the
    target, 15 the stop, 5 neither. Its verdict: close to a coin flip. That is
    the point of looking before you risk a dollar.
@@ -117,7 +129,7 @@ An example, the trade in the reel: Tesla, Monday October 19 2026, real data.
    that exact order. Claude calls your brokerage connector (Alpaca's MCP
    server, paper account by default), and Claude's own "Allow once / Deny"
    card asks you one more time.
-9. **`/trader-alerts`** rings on the stop, the target and at 3:55 PM to
+9. **`/trader-alerts`** rings on the stop, the target and at 3:15 PM to
    flatten whatever is still open.
 
 ## The tools
@@ -126,9 +138,9 @@ All standard-library Python. The data tools read public endpoints and are
 polite about it.
 
 ```bash
-python3 trader-scanner/scan.py universe                                # ~5,900 US stocks, Nasdaq Trader
+python3 trader-scanner/scan.py universe                                # ~2,400 NSE stocks, NSE's list
 python3 trader-scanner/scan.py daily                                   # pre-market setups, whole universe
-python3 trader-scanner/scan.py orb --at 10:15                          # opening-range breakouts so far
+python3 trader-scanner/scan.py orb --at 10:00                          # opening-range breakouts so far
 python3 trader-news/news.py --tickers TSLA --hours 12                  # headlines, 8-Ks, today's move
 python3 trader-entry/entry.py check TSLA --setup orb                   # waiting / triggered / expired
 python3 trader-entry/entry.py watch TSLA --every 30                    # bar by bar until it triggers
@@ -148,9 +160,13 @@ python3 -m unittest discover -s tests -v
 ```
 
 The tests run offline, on fixtures cut from real data: TSLA's 5-minute bars
-for the 60 days to October 19 2026, the 10:15 AM opening-range scan, Yahoo's
-TSLA headlines that morning, the House Clerk's 2026 index, real PTR text and
-real XBRL facts. They reproduce every number in the example above.
+for the 60 days to October 19 2026, the 10:00 AM opening-range scan, Yahoo's
+TSLA headlines that day, the House Clerk's 2026 index, real PTR text, real
+XBRL facts and a trimmed copy of NSE's equity list. The intraday bars are
+real US sessions re-timed onto the NSE clock by `tests/retime_to_nse.py`
+(9:30 New York becomes 9:15 IST; prices unchanged), so every hand-checked
+price still holds; `tests/test_nse.py` checks the NSE clock, holidays, the
+15:15 flat-by and `.NS` symbols across the pack.
 
 ## Fine print
 
